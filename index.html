@@ -1,0 +1,1140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Hospital Management System</title>
+  <style>
+    /* Simple, clean styles (no external frameworks) */
+    :root{
+      --bg:#f4f7fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#0f62fe;
+      --danger:#e11d48;
+      --success:#059669;
+      --glass: rgba(255,255,255,0.6);
+      --shadow: 0 6px 18px rgba(34,34,34,0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background: linear-gradient(180deg, #eef2ff 0%, var(--bg) 100%);
+      color:#111827;
+      min-height:100vh;
+      display:flex;
+      gap:20px;
+      padding:20px;
+    }
+    .app {
+      width:100%;
+      max-width:1200px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:260px 1fr;
+      gap:20px;
+      align-items:start;
+    }
+    /* SIDEBAR */
+    aside.sidebar{
+      background:var(--card);
+      border-radius:12px;
+      padding:18px;
+      box-shadow:var(--shadow);
+      height:fit-content;
+    }
+    .brand { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+    .logo {
+      width:44px; height:44px; border-radius:8px;
+      background:linear-gradient(135deg,var(--accent),#7c3aed);
+      display:flex; align-items:center; justify-content:center; color:white; font-weight:700;
+      box-shadow: 0 6px 14px rgba(15,98,254,0.18);
+    }
+    nav ul{list-style:none; padding:0; margin:0}
+    nav li{margin:8px 0}
+    nav button {
+      width:100%;
+      border:0;
+      background:transparent;
+      text-align:left;
+      padding:10px 8px;
+      border-radius:8px;
+      display:flex; justify-content:space-between; align-items:center;
+      color:#0f172a;
+      cursor:pointer;
+      font-weight:600;
+    }
+    nav button.active{
+      background:linear-gradient(90deg, rgba(15,98,254,0.12), rgba(124,58,237,0.06));
+      color:var(--accent);
+    }
+    /* MAIN */
+    main.card {
+      background:var(--card);
+      border-radius:12px;
+      padding:18px;
+      box-shadow:var(--shadow);
+      min-height:520px;
+    }
+    .topbar {display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px}
+    .search {
+      display:flex; gap:8px; align-items:center;
+      background:var(--glass); padding:6px 8px; border-radius:8px;
+    }
+    input, select, textarea {
+      padding:8px 10px; border-radius:8px; border:1px solid #e6e8eb; outline:none;
+      font-size:14px;
+      background:white;
+    }
+    .grid {display:grid; gap:12px}
+    .grid.cols-3{grid-template-columns:repeat(3,1fr)}
+    .card-block { background:linear-gradient(180deg, #ffffff, #fbfdff); padding:12px; border-radius:10px; box-shadow: 0 4px 10px rgba(17,24,39,0.04) }
+    .stats {display:flex; gap:12px}
+    .stat {flex:1; padding:12px; border-radius:10px; background:linear-gradient(90deg,#fff 0%, #f7f9ff 100%); display:flex; flex-direction:column}
+    table {width:100%; border-collapse:collapse; font-size:14px}
+    th, td {padding:8px 10px; border-bottom:1px solid #f1f5f9; text-align:left}
+    th {font-weight:700; color:var(--muted); font-size:13px}
+    .actions button{margin-right:6px}
+    .btn {
+      border:0; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600;
+    }
+    .btn.primary{background:var(--accent); color:white}
+    .btn.ghost{background:transparent; border:1px solid #e6e8eb}
+    .btn.warn{background: #f59e0b; color:white}
+    .btn.danger{background:var(--danger); color:white}
+    form .row {display:flex; gap:8px}
+    form .col {flex:1}
+    .small {font-size:13px; color:var(--muted)}
+    /* responsive */
+    @media (max-width:900px){
+      .app { grid-template-columns: 1fr; padding:12px }
+      aside.sidebar{order:2}
+      main.card{order:1}
+    }
+    footer.small { text-align:center; color:var(--muted); margin-top:14px; font-size:13px }
+    .pill{display:inline-block; padding:6px 8px; border-radius:999px; font-size:13px; background:#eef2ff; color:var(--accent); font-weight:700}
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Hospital Management System">
+    <aside class="sidebar" aria-label="Navigation">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">H</div>
+        <div>
+          <div style="font-weight:800">MediHub</div>
+          <div class="small">Hospital Management</div>
+        </div>
+      </div>
+
+      <nav aria-label="Main navigation">
+        <ul>
+          <li><button id="nav-dashboard" class="active" data-panel="dashboard">Dashboard</button></li>
+          <li><button id="nav-patients" data-panel="patients">Patients</button></li>
+          <li><button id="nav-doctors" data-panel="doctors">Doctors</button></li>
+          <li><button id="nav-appointments" data-panel="appointments">Appointments</button></li>
+          <li><button id="nav-billing" data-panel="billing">Billing</button></li>
+          <li><button id="nav-settings" data-panel="settings">Settings</button></li>
+        </ul>
+      </nav>
+
+      <hr style="margin:12px 0; border:none; height:1px; background:#f1f5f9" />
+      <div>
+        <div style="font-weight:700; margin-bottom:6px">Quick Actions</div>
+        <div style="display:flex; gap:8px; flex-direction:column">
+          <button class="btn primary" id="quick-add-patient">+ Add Patient</button>
+          <button class="btn ghost" id="quick-add-appointment">+ New Appointment</button>
+          <button class="btn" id="quick-export">Export CSV</button>
+        </div>
+      </div>
+      <footer class="small" aria-hidden="true">Built for demo • Local storage only</footer>
+    </aside>
+
+    <main class="card" id="main">
+      <!-- Topbar -->
+      <div class="topbar">
+        <div>
+          <h1 id="page-title" style="margin:0; font-size:20px">Dashboard</h1>
+          <div class="small" id="page-sub">Overview of hospital activities</div>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div class="search" role="search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="11" cy="11" r="6" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></circle></svg>
+            <input id="global-search" placeholder="Search patients, doctors, appointments..." aria-label="Search"/>
+          </div>
+          <button class="btn ghost" id="btn-reset-sample">Reset Sample Data</button>
+        </div>
+      </div>
+
+      <!-- Panels -->
+      <section id="panel-dashboard" class="panel">
+        <div class="grid cols-3" style="margin-bottom:12px">
+          <div class="stat card-block">
+            <div class="small">Patients</div>
+            <div style="font-size:20px" id="stat-patients">0</div>
+            <div class="small">Total registered patients</div>
+          </div>
+          <div class="stat card-block">
+            <div class="small">Doctors</div>
+            <div style="font-size:20px" id="stat-doctors">0</div>
+            <div class="small">Active doctors</div>
+          </div>
+          <div class="stat card-block">
+            <div class="small">Appointments</div>
+            <div style="font-size:20px" id="stat-appointments">0</div>
+            <div class="small">Scheduled today & upcoming</div>
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:2fr 1fr; gap:12px">
+          <div class="card-block">
+            <h3 style="margin-top:0">Upcoming Appointments</h3>
+            <div id="upcoming-list" class="small">No appointments yet</div>
+          </div>
+          <div class="card-block">
+            <h3 style="margin-top:0">Quick Metrics</h3>
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <div class="small">Today's appointments: <span id="metric-today">0</span></div>
+              <div class="small">Pending bills: <span id="metric-pending">0</span></div>
+              <div class="small">Revenue (est): <span id="metric-revenue">₹0</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Patients Panel -->
+      <section id="panel-patients" class="panel" style="display:none">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+          <div>
+            <h2 style="margin:0">Patients</h2>
+            <div class="small">Add, edit and manage patient records</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center">
+            <input id="patient-filter" placeholder="Filter by name or mobile" class="small" />
+            <button class="btn primary" id="open-patient-form">+ Add Patient</button>
+          </div>
+        </div>
+
+        <div class="card-block">
+          <table aria-label="Patients table">
+            <thead>
+              <tr><th>Name</th><th>Age</th><th>Gender</th><th>Mobile</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="patients-table">
+              <!-- rows generated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Doctors Panel -->
+      <section id="panel-doctors" class="panel" style="display:none">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+          <div>
+            <h2 style="margin:0">Doctors</h2>
+            <div class="small">Manage doctor profiles and specialties</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center">
+            <input id="doctor-filter" placeholder="Filter by name or specialty" class="small" />
+            <button class="btn primary" id="open-doctor-form">+ Add Doctor</button>
+          </div>
+        </div>
+
+        <div class="card-block">
+          <table aria-label="Doctors table">
+            <thead>
+              <tr><th>Name</th><th>Specialty</th><th>Availability</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="doctors-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Appointments Panel -->
+      <section id="panel-appointments" class="panel" style="display:none">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+          <div>
+            <h2 style="margin:0">Appointments</h2>
+            <div class="small">Schedule appointments and view calendar</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center">
+            <input id="appt-filter" placeholder="Filter by patient or doctor" class="small" />
+            <button class="btn primary" id="open-appt-form">+ New Appointment</button>
+          </div>
+        </div>
+
+        <div class="card-block">
+          <table aria-label="Appointments table">
+            <thead>
+              <tr><th>When</th><th>Patient</th><th>Doctor</th><th>Reason</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="appointments-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Billing Panel -->
+      <section id="panel-billing" class="panel" style="display:none">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+          <div>
+            <h2 style="margin:0">Billing</h2>
+            <div class="small">Create invoice, calculate totals</div>
+          </div>
+        </div>
+
+        <div class="card-block">
+          <form id="billing-form" onsubmit="return false" aria-label="Create billing invoice">
+            <div class="row">
+              <div class="col">
+                <label class="small">Patient</label>
+                <select id="bill-patient"></select>
+              </div>
+              <div class="col">
+                <label class="small">Service / Item</label>
+                <input id="bill-item" placeholder="e.g., Consultation, X-Ray" />
+              </div>
+              <div class="col">
+                <label class="small">Amount (₹)</label>
+                <input id="bill-amount" type="number" min="0" step="0.01" />
+              </div>
+            </div>
+            <div style="margin-top:10px; display:flex; gap:8px">
+              <button class="btn primary" id="add-bill-line">Add Line</button>
+              <button class="btn ghost" id="clear-bill-lines">Clear</button>
+            </div>
+          </form>
+
+          <div style="margin-top:12px">
+            <h3 style="margin:6px 0">Invoice</h3>
+            <table id="invoice-table">
+              <thead><tr><th>Item</th><th>Amount (₹)</th><th></th></tr></thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr><td style="text-align:right">Subtotal</td><td id="inv-sub">₹0</td><td></td></tr>
+                <tr><td style="text-align:right">Tax (18%)</td><td id="inv-tax">₹0</td><td></td></tr>
+                <tr><td style="text-align:right; font-weight:800">Total</td><td id="inv-total" style="font-weight:800">₹0</td><td></td></tr>
+              </tfoot>
+            </table>
+            <div style="margin-top:8px; display:flex; gap:8px;">
+              <button class="btn primary" id="save-invoice">Save Invoice</button>
+              <button class="btn ghost" id="download-invoice">Download CSV</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings -->
+      <section id="panel-settings" class="panel" style="display:none">
+        <h2>Settings</h2>
+        <div class="small">Manage local demo data</div>
+        <div style="margin-top:8px; display:flex; gap:8px;">
+          <button class="btn danger" id="btn-clear-all">Clear All Data</button>
+          <button class="btn ghost" id="btn-load-sample">Load Sample Data</button>
+        </div>
+      </section>
+
+      <!-- Modals (forms) are inserted dynamically -->
+      <div id="modals"></div>
+
+    </main>
+  </div>
+
+  <script>
+    /****************************************
+     * Simple Hospital Management System
+     * Single-file front-end demo
+     * Persistence: localStorage
+     ****************************************/
+
+    // ======= Storage helpers =======
+    const STORAGE_KEYS = {
+      patients: 'hms_patients_v1',
+      doctors: 'hms_doctors_v1',
+      appointments: 'hms_appointments_v1',
+      invoices: 'hms_invoices_v1'
+    };
+
+    function save(key, data){
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+    function load(key){
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : [];
+      } catch(e) {
+        console.error('Storage load error', e);
+        return [];
+      }
+    }
+
+    // ======= Simple unique ID generator =======
+    function uid(prefix='id'){
+      return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+    }
+
+    // ======= Initial sample data =======
+    function sampleData(){
+      const patients = [
+        { id: uid('p'), name: 'Asha Kumar', age: 28, gender: 'Female', mobile: '9876543210', notes: '' },
+        { id: uid('p'), name: 'Ravi Sharma', age: 45, gender: 'Male', mobile: '9123456780', notes: 'Diabetic' },
+        { id: uid('p'), name: 'Meera Patel', age: 34, gender: 'Female', mobile: '9988776655', notes: '' }
+      ];
+      const doctors = [
+        { id: uid('d'), name: 'Dr. S. Nair', specialty: 'General Physician', availability: 'Mon-Fri 9:00-17:00' },
+        { id: uid('d'), name: 'Dr. Kavita Rao', specialty: 'Pediatrics', availability: 'Tue, Thu 10:00-16:00' },
+        { id: uid('d'), name: 'Dr. Arjun Verma', specialty: 'Orthopedics', availability: 'Mon, Wed, Fri 11:00-15:00' }
+      ];
+      const now = new Date();
+      const appointments = [
+        { id: uid('a'), patientId: patients[0].id, doctorId: doctors[0].id, datetime: new Date(now.getTime() + 3600*1000*24).toISOString(), reason: 'Fever & cough', status: 'Scheduled' },
+        { id: uid('a'), patientId: patients[1].id, doctorId: doctors[2].id, datetime: new Date(now.getTime() + 3600*1000*48).toISOString(), reason: 'Knee pain', status: 'Scheduled' }
+      ];
+      const invoices = [];
+      save(STORAGE_KEYS.patients, patients);
+      save(STORAGE_KEYS.doctors, doctors);
+      save(STORAGE_KEYS.appointments, appointments);
+      save(STORAGE_KEYS.invoices, invoices);
+      return {patients, doctors, appointments, invoices};
+    }
+
+    // ======= In-memory caches synced with localStorage =======
+    let patients = load(STORAGE_KEYS.patients);
+    let doctors = load(STORAGE_KEYS.doctors);
+    let appointments = load(STORAGE_KEYS.appointments);
+    let invoices = load(STORAGE_KEYS.invoices);
+
+    // If empty, initialize sample data
+    if (!patients.length && !doctors.length && !appointments.length){
+      const s = sampleData();
+      patients = s.patients; doctors = s.doctors; appointments = s.appointments; invoices = s.invoices;
+    }
+
+    // ======= UI helpers & rendering =======
+    const panels = document.querySelectorAll('.panel');
+    const navButtons = document.querySelectorAll('nav button');
+
+    function showPanel(name){
+      panels.forEach(p => p.style.display = p.id === 'panel-' + name ? '' : 'none');
+      navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.panel === name));
+      const title = document.getElementById('page-title');
+      const sub = document.getElementById('page-sub');
+      title.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+      sub.textContent = {
+        dashboard: 'Overview of hospital activities',
+        patients: 'Add, edit and manage patient records',
+        doctors: 'Manage doctor profiles and specialties',
+        appointments: 'Schedule appointments and view calendar',
+        billing: 'Create invoice, calculate totals',
+        settings: 'Manage demo data'
+      }[name] || '';
+      // refresh lists when switching
+      renderAll();
+    }
+
+    navButtons.forEach(btn => btn.addEventListener('click', ()=> showPanel(btn.dataset.panel)));
+
+    // ======= Global search =======
+    document.getElementById('global-search').addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      // naive global filter: mark only tables that match
+      renderAll(q);
+    });
+
+    // ======= Dashboard stats & upcoming appointments =======
+    function updateStats(){
+      document.getElementById('stat-patients').textContent = patients.length;
+      document.getElementById('stat-doctors').textContent = doctors.length;
+      document.getElementById('stat-appointments').textContent = appointments.length;
+
+      const today = new Date(); today.setHours(0,0,0,0);
+      const upcoming = appointments
+        .map(a => ({...a, date: new Date(a.datetime)}))
+        .filter(a => a.date >= today)
+        .sort((a,b) => new Date(a.datetime) - new Date(b.datetime));
+
+      const upNode = document.getElementById('upcoming-list');
+      if (!upcoming.length) upNode.textContent = 'No upcoming appointments';
+      else {
+        upNode.innerHTML = '';
+        const list = document.createElement('div');
+        list.style.display='flex'; list.style.flexDirection='column'; list.style.gap='8px';
+        for (let i=0;i<Math.min(6,upcoming.length);i++){
+          const a = upcoming[i];
+          const p = patients.find(x=>x.id===a.patientId) || {name:'Unknown'};
+          const d = doctors.find(x=>x.id===a.doctorId) || {name:'Unknown'};
+          const el = document.createElement('div');
+          el.className = 'small';
+          el.innerHTML = `<strong>${p.name}</strong> with <span class="pill">${d.name}</span> — ${new Date(a.datetime).toLocaleString()}`;
+          list.appendChild(el);
+        }
+        upNode.appendChild(list);
+      }
+
+      // metrics
+      const metricToday = appointments.filter(a => {
+        const dt = new Date(a.datetime);
+        const diff = Math.abs(dt - new Date());
+        // if appointment within same day:
+        const sameDay = dt.getFullYear() === new Date().getFullYear() &&
+                        dt.getMonth() === new Date().getMonth() &&
+                        dt.getDate() === new Date().getDate();
+        return sameDay;
+      }).length;
+      document.getElementById('metric-today').textContent = metricToday;
+      const pending = invoices.filter(inv => !inv.paid).length;
+      document.getElementById('metric-pending').textContent = pending;
+      const revenue = invoices.reduce((s,inv)=> s + (inv.total || 0), 0);
+      document.getElementById('metric-revenue').textContent = '₹' + formatNumber(revenue);
+    }
+
+    // ======= Patients table =======
+    function renderPatients(filter=''){
+      const tbody = document.getElementById('patients-table');
+      tbody.innerHTML = '';
+      const q = (filter || document.getElementById('patient-filter').value || '').toLowerCase();
+      const rows = patients.filter(p => {
+        if (!q) return true;
+        return p.name.toLowerCase().includes(q) || (p.mobile||'').includes(q) || (p.notes||'').toLowerCase().includes(q);
+      });
+      if (!rows.length){
+        tbody.innerHTML = '<tr><td colspan="5" class="small">No patients found</td></tr>';
+        return;
+      }
+      rows.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(p.name)}</td>
+          <td>${p.age || '-'}</td>
+          <td>${p.gender || '-'}</td>
+          <td>${escapeHtml(p.mobile || '-')}</td>
+          <td class="actions">
+            <button class="btn ghost" data-action="view" data-id="${p.id}">View</button>
+            <button class="btn" data-action="edit" data-id="${p.id}">Edit</button>
+            <button class="btn danger" data-action="del" data-id="${p.id}">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      // attach event delegation
+      tbody.querySelectorAll('button').forEach(b => {
+        b.addEventListener('click', () => {
+          const id = b.dataset.id;
+          const act = b.dataset.action;
+          if (act==='view') showPatientView(id);
+          if (act==='edit') openPatientForm(id);
+          if (act==='del') {
+            if (confirm('Delete patient? This cannot be undone.')) {
+              patients = patients.filter(x => x.id !== id);
+              save(STORAGE_KEYS.patients, patients);
+              // also delete appointments referring to this patient
+              appointments = appointments.filter(a => a.patientId !== id);
+              save(STORAGE_KEYS.appointments, appointments);
+              renderAll();
+            }
+          }
+        });
+      });
+    }
+
+    // ======= Doctors =======
+    function renderDoctors(){
+      const tbody = document.getElementById('doctors-table');
+      tbody.innerHTML = '';
+      const q = (document.getElementById('doctor-filter').value || '').toLowerCase();
+      const rows = doctors.filter(d => !q || d.name.toLowerCase().includes(q) || (d.specialty||'').toLowerCase().includes(q));
+      if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" class="small">No doctors found</td></tr>'; return; }
+      rows.forEach(d => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(d.name)}</td>
+          <td>${escapeHtml(d.specialty || '-')}</td>
+          <td class="small">${escapeHtml(d.availability || '-')}</td>
+          <td>
+            <button class="btn" data-act="edit-doctor" data-id="${d.id}">Edit</button>
+            <button class="btn danger" data-act="del-doctor" data-id="${d.id}">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll('button').forEach(b => {
+        b.addEventListener('click', () => {
+          const id = b.dataset.id; const act = b.dataset.act;
+          if (act==='edit-doctor') openDoctorForm(id);
+          if (act==='del-doctor') {
+            if (confirm('Delete doctor? Appointments with this doctor will remain but doctor will be unknown.')) {
+              doctors = doctors.filter(x=>x.id!==id);
+              save(STORAGE_KEYS.doctors, doctors);
+              renderAll();
+            }
+          }
+        });
+      });
+    }
+
+    // ======= Appointments =======
+    function renderAppointments(){
+      const tbody = document.getElementById('appointments-table');
+      tbody.innerHTML = '';
+      const q = (document.getElementById('appt-filter').value || '').toLowerCase();
+      const rows = appointments.slice().sort((a,b) => new Date(a.datetime) - new Date(b.datetime)).filter(a => {
+        if (!q) return true;
+        const p = patients.find(x=>x.id===a.patientId) || {};
+        const d = doctors.find(x=>x.id===a.doctorId) || {};
+        return (p.name || '').toLowerCase().includes(q) || (d.name || '').toLowerCase().includes(q) || (a.reason||'').toLowerCase().includes(q);
+      });
+
+      if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="small">No appointments</td></tr>'; return; }
+      rows.forEach(a => {
+        const dt = new Date(a.datetime);
+        const p = patients.find(x=>x.id===a.patientId) || {name:'Unknown'};
+        const d = doctors.find(x=>x.id===a.doctorId) || {name:'Unknown'};
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${dt.toLocaleString()}</td>
+          <td>${escapeHtml(p.name)}</td>
+          <td>${escapeHtml(d.name)}</td>
+          <td class="small">${escapeHtml(a.reason || '')}</td>
+          <td>${escapeHtml(a.status || 'Scheduled')}</td>
+          <td>
+            <button class="btn" data-act="edit-appt" data-id="${a.id}">Edit</button>
+            <button class="btn ghost" data-act="checkin" data-id="${a.id}">Check-in</button>
+            <button class="btn danger" data-act="del-appt" data-id="${a.id}">Cancel</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll('button').forEach(b => {
+        b.addEventListener('click', () => {
+          const id = b.dataset.id; const act = b.dataset.act;
+          if (act==='edit-appt') openApptForm(id);
+          if (act==='del-appt') {
+            if (confirm('Cancel appointment?')) {
+              appointments = appointments.filter(x=>x.id!==id);
+              save(STORAGE_KEYS.appointments, appointments);
+              renderAll();
+            }
+          }
+          if (act==='checkin') {
+            const ap = appointments.find(x=>x.id===id);
+            if (ap){
+              ap.status = 'Completed';
+              save(STORAGE_KEYS.appointments, appointments);
+              renderAll();
+            }
+          }
+        });
+      });
+    }
+
+    // ======= Billing / Invoice UI =======
+    let currentInvoiceLines = [];
+    function renderBillPatientSelect(){
+      const sel = document.getElementById('bill-patient');
+      sel.innerHTML = '';
+      patients.forEach(p => {
+        const o = document.createElement('option');
+        o.value = p.id; o.textContent = p.name + ' — ' + (p.mobile || '');
+        sel.appendChild(o);
+      });
+    }
+    function addBillLine(item, amount){
+      if (!item || !amount) return;
+      currentInvoiceLines.push({id:uid('ln'), item, amount: Number(amount)});
+      renderInvoiceTable();
+    }
+    function renderInvoiceTable(){
+      const tbody = document.querySelector('#invoice-table tbody');
+      tbody.innerHTML = '';
+      currentInvoiceLines.forEach(line => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${escapeHtml(line.item)}</td><td>₹${formatNumber(line.amount)}</td><td><button class="btn danger" data-del="${line.id}">Remove</button></td>`;
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll('button').forEach(b => {
+        b.addEventListener('click', () => {
+          const id = b.dataset.del;
+          currentInvoiceLines = currentInvoiceLines.filter(l=>l.id!==id);
+          renderInvoiceTable();
+        });
+      });
+      const subtotal = currentInvoiceLines.reduce((s,l)=> s + l.amount, 0);
+      const tax = +(subtotal * 0.18).toFixed(2);
+      const total = +(subtotal + tax).toFixed(2);
+      document.getElementById('inv-sub').textContent = '₹' + formatNumber(subtotal);
+      document.getElementById('inv-tax').textContent = '₹' + formatNumber(tax);
+      document.getElementById('inv-total').textContent = '₹' + formatNumber(total);
+    }
+
+    document.getElementById('add-bill-line').addEventListener('click', (e)=>{
+      e.preventDefault();
+      const item = document.getElementById('bill-item').value.trim();
+      const amount = Number(document.getElementById('bill-amount').value);
+      if (!item || !amount){ alert('Please provide item and amount'); return; }
+      addBillLine(item, amount);
+      document.getElementById('bill-item').value=''; document.getElementById('bill-amount').value='';
+    });
+    document.getElementById('clear-bill-lines').addEventListener('click', (e)=>{
+      e.preventDefault();
+      currentInvoiceLines = [];
+      renderInvoiceTable();
+    });
+    document.getElementById('save-invoice').addEventListener('click', ()=>{
+      const pid = document.getElementById('bill-patient').value;
+      if (!pid){ alert('Select a patient'); return; }
+      if (!currentInvoiceLines.length){ alert('Add invoice items'); return; }
+      const subtotal = currentInvoiceLines.reduce((s,l)=> s + l.amount, 0);
+      const tax = +((subtotal*0.18).toFixed(2));
+      const total = +(subtotal + tax).toFixed(2);
+      const inv = {
+        id: uid('inv'),
+        patientId: pid,
+        lines: currentInvoiceLines.slice(),
+        subtotal, tax, total, date: new Date().toISOString(),
+        paid: false
+      };
+      invoices.push(inv);
+      save(STORAGE_KEYS.invoices, invoices);
+      alert('Invoice saved');
+      currentInvoiceLines = [];
+      renderInvoiceTable();
+      renderAll();
+    });
+    document.getElementById('download-invoice').addEventListener('click', ()=>{
+      if (!invoices.length){ alert('No invoices to download'); return; }
+      const csv = toCSV(invoices.map(inv => {
+        const patient = patients.find(p=>p.id===inv.patientId) || {name:'Unknown'};
+        return {
+          invoice_id: inv.id,
+          patient: patient.name,
+          date: inv.date,
+          total: inv.total,
+          paid: inv.paid
+        };
+      }));
+      downloadBlob(csv, 'invoices.csv', 'text/csv');
+    });
+
+    // ======= Helpers =======
+    function formatNumber(n){
+      return n.toLocaleString('en-IN', {maximumFractionDigits:2, minimumFractionDigits: n%1 ? 2 : 0});
+    }
+    function escapeHtml(s){ return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    // ======= Modal forms for create/edit =======
+    const modalsRoot = document.getElementById('modals');
+
+    function openPatientForm(id){
+      const editing = patients.find(p=>p.id===id) || null;
+      const html = `
+        <div role="dialog" aria-modal="true" style="position:fixed; inset:0; background:rgba(2,6,23,0.4); display:flex; align-items:center; justify-content:center; padding:18px;">
+          <div style="background:white; border-radius:12px; width:720px; max-width:100%; padding:16px; box-shadow:0 20px 40px rgba(2,6,23,0.4)">
+            <h3 style="margin-top:0">${editing ? 'Edit' : 'Add'} Patient</h3>
+            <form id="patient-form" onsubmit="return false">
+              <div class="row">
+                <div class="col"><label class="small">Name</label><input id="pf-name" required /></div>
+                <div class="col"><label class="small">Age</label><input id="pf-age" type="number" min="0" /></div>
+                <div class="col"><label class="small">Gender</label>
+                  <select id="pf-gender"><option>Female</option><option>Male</option><option>Other</option></select></div>
+              </div>
+              <div style="margin-top:8px" class="row">
+                <div class="col"><label class="small">Mobile</label><input id="pf-mobile" /></div>
+                <div class="col"><label class="small">Notes</label><input id="pf-notes" /></div>
+              </div>
+              <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+                <button class="btn ghost" id="pf-cancel">Cancel</button>
+                <button class="btn primary" id="pf-save">${editing ? 'Save' : 'Create'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      modalsRoot.innerHTML = html;
+      if (editing){
+        document.getElementById('pf-name').value = editing.name;
+        document.getElementById('pf-age').value = editing.age;
+        document.getElementById('pf-gender').value = editing.gender || 'Female';
+        document.getElementById('pf-mobile').value = editing.mobile || '';
+        document.getElementById('pf-notes').value = editing.notes || '';
+      }
+      document.getElementById('pf-cancel').addEventListener('click', (e)=> { e.preventDefault(); modalsRoot.innerHTML=''; });
+      document.getElementById('pf-save').addEventListener('click', (e)=>{
+        e.preventDefault();
+        const name = document.getElementById('pf-name').value.trim();
+        if (!name){ alert('Name required'); return; }
+        const age = Number(document.getElementById('pf-age').value) || null;
+        const gender = document.getElementById('pf-gender').value;
+        const mobile = document.getElementById('pf-mobile').value.trim();
+        const notes = document.getElementById('pf-notes').value.trim();
+        if (editing){
+          editing.name = name; editing.age = age; editing.gender = gender; editing.mobile = mobile; editing.notes = notes;
+        } else {
+          patients.push({ id: uid('p'), name, age, gender, mobile, notes });
+        }
+        save(STORAGE_KEYS.patients, patients);
+        modalsRoot.innerHTML = '';
+        renderAll();
+      });
+    }
+
+    function showPatientView(id){
+      const p = patients.find(x=>x.id===id);
+      if (!p) { alert('Patient not found'); return; }
+      const patientAppts = appointments.filter(a=>a.patientId===id).sort((a,b)=> new Date(b.datetime)-new Date(a.datetime));
+      let html = `
+        <div role="dialog" aria-modal="true" style="position:fixed; inset:0; background:rgba(2,6,23,0.4); display:flex; align-items:center; justify-content:center; padding:18px;">
+          <div style="background:white; border-radius:12px; width:720px; max-width:100%; padding:16px; box-shadow:0 20px 40px rgba(2,6,23,0.4)">
+            <h3 style="margin-top:0">Patient — ${escapeHtml(p.name)}</h3>
+            <div class="small">Age: ${p.age || '-'} • Gender: ${escapeHtml(p.gender || '-')} • Mobile: ${escapeHtml(p.mobile || '-')}</div>
+            <div style="margin-top:8px"><strong>Notes</strong><div class="small">${escapeHtml(p.notes || '—')}</div></div>
+            <div style="margin-top:12px">
+              <h4 style="margin:6px 0">Recent Appointments</h4>
+              <div class="small">
+      `;
+      if (!patientAppts.length) html += '<div class="small">No appointments</div>';
+      else {
+        for (const a of patientAppts.slice(0,6)){
+          const d = doctors.find(x=>x.id===a.doctorId) || {name:'Unknown'};
+          html += `<div style="margin-bottom:6px"><strong>${new Date(a.datetime).toLocaleString()}</strong> with ${escapeHtml(d.name)} — ${escapeHtml(a.reason || '')} — <em>${a.status}</em></div>`;
+        }
+      }
+      html += `</div>
+            </div>
+            <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+              <button class="btn ghost" id="pv-close">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+      modalsRoot.innerHTML = html;
+      document.getElementById('pv-close').addEventListener('click', ()=> modalsRoot.innerHTML='');
+    }
+
+    function openDoctorForm(id){
+      const editing = doctors.find(d=>d.id===id) || null;
+      const html = `
+        <div role="dialog" aria-modal="true" style="position:fixed; inset:0; background:rgba(2,6,23,0.4); display:flex; align-items:center; justify-content:center; padding:18px;">
+          <div style="background:white; border-radius:12px; width:640px; max-width:100%; padding:16px; box-shadow:0 20px 40px rgba(2,6,23,0.4)">
+            <h3 style="margin-top:0">${editing ? 'Edit' : 'Add'} Doctor</h3>
+            <form id="doctor-form" onsubmit="return false">
+              <div class="row">
+                <div class="col"><label class="small">Name</label><input id="df-name" required /></div>
+                <div class="col"><label class="small">Specialty</label><input id="df-specialty" /></div>
+              </div>
+              <div style="margin-top:8px" class="row">
+                <div class="col"><label class="small">Availability</label><input id="df-availability" /></div>
+              </div>
+              <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+                <button class="btn ghost" id="df-cancel">Cancel</button>
+                <button class="btn primary" id="df-save">${editing ? 'Save' : 'Create'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      modalsRoot.innerHTML = html;
+      if (editing){
+        document.getElementById('df-name').value = editing.name;
+        document.getElementById('df-specialty').value = editing.specialty || '';
+        document.getElementById('df-availability').value = editing.availability || '';
+      }
+      document.getElementById('df-cancel').addEventListener('click', (e)=> { e.preventDefault(); modalsRoot.innerHTML=''; });
+      document.getElementById('df-save').addEventListener('click', (e)=>{
+        e.preventDefault();
+        const name = document.getElementById('df-name').value.trim();
+        if (!name) { alert('Name required'); return; }
+        const specialty = document.getElementById('df-specialty').value.trim();
+        const availability = document.getElementById('df-availability').value.trim();
+        if (editing){
+          editing.name = name; editing.specialty = specialty; editing.availability = availability;
+        } else {
+          doctors.push({ id: uid('d'), name, specialty, availability });
+        }
+        save(STORAGE_KEYS.doctors, doctors);
+        modalsRoot.innerHTML = '';
+        renderAll();
+      });
+    }
+
+    function openApptForm(id){
+      const editing = appointments.find(a=>a.id===id) || null;
+      const html = `
+        <div role="dialog" aria-modal="true" style="position:fixed; inset:0; background:rgba(2,6,23,0.4); display:flex; align-items:center; justify-content:center; padding:18px;">
+          <div style="background:white; border-radius:12px; width:720px; max-width:100%; padding:16px; box-shadow:0 20px 40px rgba(2,6,23,0.4)">
+            <h3 style="margin-top:0">${editing ? 'Edit' : 'New'} Appointment</h3>
+            <form id="appt-form" onsubmit="return false">
+              <div class="row">
+                <div class="col"><label class="small">Patient</label><select id="af-patient"></select></div>
+                <div class="col"><label class="small">Doctor</label><select id="af-doctor"></select></div>
+                <div class="col"><label class="small">When</label><input id="af-datetime" type="datetime-local" /></div>
+              </div>
+              <div style="margin-top:8px">
+                <label class="small">Reason</label><input id="af-reason" />
+              </div>
+              <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+                <button class="btn ghost" id="af-cancel">Cancel</button>
+                <button class="btn primary" id="af-save">${editing ? 'Save' : 'Schedule'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      modalsRoot.innerHTML = html;
+      const selP = document.getElementById('af-patient'), selD = document.getElementById('af-doctor');
+      selP.innerHTML = ''; selD.innerHTML = '';
+      patients.forEach(p => { const o=document.createElement('option'); o.value=p.id; o.textContent=p.name; selP.appendChild(o); });
+      doctors.forEach(d => { const o=document.createElement('option'); o.value=d.id; o.textContent=d.name + (d.specialty ? ' — ' + d.specialty : ''); selD.appendChild(o); });
+
+      if (editing){
+        document.getElementById('af-patient').value = editing.patientId;
+        document.getElementById('af-doctor').value = editing.doctorId;
+        // format to datetime-local string
+        const dt = new Date(editing.datetime);
+        const localStr = dt.toISOString().slice(0,16);
+        document.getElementById('af-datetime').value = localStr;
+        document.getElementById('af-reason').value = editing.reason || '';
+      }
+
+      document.getElementById('af-cancel').addEventListener('click', (e)=> { e.preventDefault(); modalsRoot.innerHTML=''; });
+      document.getElementById('af-save').addEventListener('click', (e)=>{
+        e.preventDefault();
+        const patientId = document.getElementById('af-patient').value;
+        const doctorId = document.getElementById('af-doctor').value;
+        const dt = document.getElementById('af-datetime').value;
+        const reason = document.getElementById('af-reason').value.trim();
+        if (!patientId || !doctorId || !dt){ alert('Patient, doctor, and time required'); return; }
+        if (editing){
+          editing.patientId = patientId; editing.doctorId = doctorId; editing.datetime = new Date(dt).toISOString(); editing.reason = reason;
+        } else {
+          appointments.push({ id: uid('a'), patientId, doctorId, datetime: new Date(dt).toISOString(), reason, status: 'Scheduled' });
+        }
+        save(STORAGE_KEYS.appointments, appointments);
+        modalsRoot.innerHTML = '';
+        renderAll();
+      });
+    }
+
+    // ======= Export / CSV helpers =======
+    function toCSV(rows){
+      if (!rows.length) return '';
+      const keys = Object.keys(rows[0]);
+      const lines = [keys.join(',')];
+      for (const r of rows){
+        const line = keys.map(k => {
+          let v = r[k];
+          if (v === null || v === undefined) v = '';
+          v = String(v).replace(/"/g,'""');
+          if (v.includes(',') || v.includes('"') || v.includes('\n')) v = `"${v}"`;
+          return v;
+        }).join(',');
+        lines.push(line);
+      }
+      return lines.join('\n');
+    }
+    function downloadBlob(text, filename='data.txt', type='text/plain'){
+      const blob = new Blob([text], {type});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // Quick-export: export patients, doctors, appointments to CSV
+    document.getElementById('quick-export').addEventListener('click', ()=>{
+      const data = {
+        patients,
+        doctors,
+        appointments
+      };
+      const zipData = [];
+      // create CSVs and download separately
+      if (patients.length) downloadBlob(toCSV(patients.map(p=>({id:p.id, name:p.name, age:p.age, gender:p.gender, mobile:p.mobile}))), 'patients.csv', 'text/csv');
+      if (doctors.length) downloadBlob(toCSV(doctors.map(d=>({id:d.id, name:d.name, specialty:d.specialty, availability:d.availability}))), 'doctors.csv', 'text/csv');
+      if (appointments.length) downloadBlob(toCSV(appointments.map(a=>({id:a.id, patientId:a.patientId, doctorId:a.doctorId, datetime:a.datetime, reason:a.reason, status:a.status}))), 'appointments.csv', 'text/csv');
+    });
+
+    // ======= Interaction: Quick buttons & filters =======
+    document.getElementById('open-patient-form').addEventListener('click', ()=> openPatientForm());
+    document.getElementById('quick-add-patient').addEventListener('click', ()=> { showPanel('patients'); openPatientForm(); });
+    document.getElementById('open-doctor-form').addEventListener('click', ()=> openDoctorForm());
+    document.getElementById('open-appt-form').addEventListener('click', ()=> openApptForm());
+    document.getElementById('quick-add-appointment').addEventListener('click', ()=> { showPanel('appointments'); openApptForm(); });
+
+    document.getElementById('patient-filter').addEventListener('input', ()=> renderPatients());
+    document.getElementById('doctor-filter').addEventListener('input', ()=> renderDoctors());
+    document.getElementById('appt-filter').addEventListener('input', ()=> renderAppointments());
+
+    // Settings buttons
+    document.getElementById('btn-clear-all').addEventListener('click', ()=>{
+      if (!confirm('Clear all demo data from localStorage?')) return;
+      Object.values(STORAGE_KEYS).forEach(k=>localStorage.removeItem(k));
+      patients = doctors = appointments = invoices = [];
+      renderAll();
+      alert('All data cleared. Refresh page to reinitialize sample data.');
+    });
+    document.getElementById('btn-load-sample').addEventListener('click', ()=>{
+      if (!confirm('Replace current data with sample demo data?')) return;
+      const s = sampleData();
+      patients = s.patients; doctors = s.doctors; appointments = s.appointments; invoices = s.invoices;
+      renderAll();
+      alert('Sample data loaded.');
+    });
+    document.getElementById('btn-reset-sample').addEventListener('click', ()=>{
+      if (!confirm('Reload sample demo data?')) return;
+      const s = sampleData();
+      patients = s.patients; doctors = s.doctors; appointments = s.appointments; invoices = s.invoices;
+      renderAll();
+      alert('Sample data reset.');
+    });
+
+    // Reset storage helper used earlier
+    document.getElementById('btn-reset-sample').style.display='inline-block';
+
+    // Reset sample button in topbar duplicates btn-load-sample action (keeps UX)
+    // Quick: open sample data on Ctrl+Shift+L for testing (dev convenience)
+    window.addEventListener('keydown', (e)=>{
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase()==='l'){
+        sampleData();
+        patients = load(STORAGE_KEYS.patients);
+        doctors = load(STORAGE_KEYS.doctors);
+        appointments = load(STORAGE_KEYS.appointments);
+        invoices = load(STORAGE_KEYS.invoices);
+        renderAll();
+        alert('Sample data loaded (shortcut).');
+      }
+    });
+
+    // ======= Utility: CSV export for invoices & generic =======
+    function exportAllAsCSV(){
+      const csvPatients = toCSV(patients.map(p=>({id:p.id, name:p.name, age:p.age, gender:p.gender, mobile:p.mobile})));
+      downloadBlob(csvPatients, 'patients.csv', 'text/csv');
+      // doctors, appointments...
+    }
+
+    // ======= Misc helpers =======
+    function toISOLocal(d){
+      // return local iso string appropriate for input[type=datetime-local]
+      const pad = n => (n<10?'0':'') + n;
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    // ======= Render all panels / data =======
+    function renderAll(filter=''){
+      updateStats();
+      renderPatients(filter);
+      renderDoctors();
+      renderAppointments();
+      renderBillPatientSelect();
+      renderInvoiceTable();
+    }
+
+    // ======= Utility: Convert objects to CSV-friendly simple rows (for quick export) =======
+    function flatten(obj){
+      const out = {};
+      for (const k in obj) {
+        if (typeof obj[k] === 'object') out[k] = JSON.stringify(obj[k]);
+        else out[k] = obj[k];
+      }
+      return out;
+    }
+
+    // ======= small utilities =======
+    function toHumanDate(iso){ return new Date(iso).toLocaleString(); }
+
+    // ======= Download sample data button behaviour handled earlier =======
+    document.getElementById('pv-close')?.addEventListener?.('click', ()=> modalsRoot.innerHTML='');
+
+    // ======= Utility: converting invoices or objects to CSV for download (modular) =======
+    function downloadJSON(obj, filename='data.json'){
+      downloadBlob(JSON.stringify(obj, null, 2), filename, 'application/json');
+    }
+
+    // ======= Save to localStorage when page unloads (defensive) =======
+    window.addEventListener('beforeunload', ()=> {
+      save(STORAGE_KEYS.patients, patients);
+      save(STORAGE_KEYS.doctors, doctors);
+      save(STORAGE_KEYS.appointments, appointments);
+      save(STORAGE_KEYS.invoices, invoices);
+    });
+
+    // ======= Helper: small CSV conversion for arrays of simple objects =======
+    function simpleCSVForArray(arr, mapFn){
+      if (!arr.length) return '';
+      const rows = arr.map(mapFn);
+      return toCSV(rows);
+    }
+
+    // ======= Quick load handlers for buttons that open forms from sidebar =======
+    document.getElementById('quick-add-patient').addEventListener('click', ()=> openPatientForm());
+    document.getElementById('quick-add-appointment').addEventListener('click', ()=> openApptForm());
+
+    // ======= Utility: convert invoices array to CSV of useful columns =======
+    function invoicesToCSV(invs){
+      return toCSV(invs.map(inv => {
+        const p = patients.find(x=>x.id===inv.patientId) || {name:'Unknown'};
+        return {
+          invoice_id: inv.id,
+          patient: p.name,
+          date: inv.date,
+          subtotal: inv.subtotal,
+          tax: inv.tax,
+          total: inv.total,
+          paid: inv.paid
+        };
+      }));
+    }
+
+    // ======= Event: download invoices CSV quickly =======
+    // (attach to a global window method for convenience)
+    window.downloadInvoicesCSV = ()=> {
+      if (!invoices.length) { alert('No invoices'); return; }
+      downloadBlob(invoicesToCSV(invoices), 'invoices.csv', 'text/csv');
+    };
+
+    // ======= Utility: small helper to convert data to CSV and trigger download =======
+    function exportCSVRows(name, rows){
+      if (!rows || !rows.length){ alert('No data'); return; }
+      downloadBlob(toCSV(rows), name + '.csv', 'text/csv');
+    }
+
+    // ======= Small utility: open billing panel with pre-selected patient (for quick invoicing) =======
+    document.querySelectorAll('[data-open-billing]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        showPanel('billing');
+        document.getElementById('bill-patient').value = el.dataset.openBilling;
+      });
+    });
+
+    // ======= Utility: debounce search for performance (light) =======
+    function debounce(fn, wait=250){
+      let t;
+      return function(...args){
+        clearTimeout(t);
+        t = setTimeout(()=> fn.apply(this,args), wait);
+      }
+    }
+
+    // ======= Extras: small helper to convert objects -> CSV for download of entire DB =======
+    window.exportDB = ()=>{
+      const dump = {patients, doctors, appointments, invoices};
+      downloadJSON(dump, 'hms_dump.json');
+    };
+
+    // ======= Small helper: confirm on first use if localStorage full (catch) =======
+    try {
+      localStorage.setItem('__hms_test', '1'); localStorage.removeItem('__hms_test');
+    } catch(e) { console.warn('localStorage may be unavailable'); }
+
+    // ======= Init render =======
+    renderAll();
+
+    // ======= Small utility functions used earlier but defined later for readability =======
+    // (none additional)
+
+    /***************
+     * End of file *
+     ***************/
+  </script>
+</body>
+</html>
